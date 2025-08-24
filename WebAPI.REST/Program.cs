@@ -118,6 +118,7 @@ var app = builder.Build();
 
 Error.HttpContextAccessor = app.Services.GetRequiredService<IHttpContextAccessor>();
 
+app.UseResponseCompression();
 app.MapDefaultEndpoints();
 
 // Configure the HTTP request pipeline.
