@@ -10,6 +10,7 @@ using Asp.Versioning.Builder;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Diagnostics;
@@ -21,9 +22,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-var connStringForMongoDb = builder.Configuration.GetSection("mongo");
-Debug.WriteLine($"Using MongoDB connection string: {connStringForMongoDb}");
-
+// Add Redis Distributed Cache
+builder.AddRedisDistributedCache(connectionName: "cache");
 
 
 builder.Services.AddHttpContextAccessor();
@@ -228,6 +228,29 @@ weatherGroup.MapGet("/conn-string", (IConfiguration configuration) =>
 .WithDescription("Get connection string")
 .MapToApiVersion(1);
 
+// Test endpoint to check cache functionality
+weatherGroup.MapGet("/test-cache", async (Microsoft.Extensions.Caching.Distributed.IDistributedCache cache) =>
+{
+    var cacheKey = "test-key";
+    var cachedValue = await cache.GetStringAsync(cacheKey);
+    
+    if (cachedValue == null)
+    {
+        var newValue = $"Cached at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}";
+        await cache.SetStringAsync(cacheKey, newValue, new Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+        });
+        return Results.Ok(new { Status = "Cache Miss", Value = newValue, Message = "Value cached for 5 minutes" });
+    }
+    
+    return Results.Ok(new { Status = "Cache Hit", Value = cachedValue, Message = "Retrieved from cache" });
+})
+.WithName("TestCache")
+.WithSummary("Test Redis cache functionality")
+.WithDescription("Test Redis cache functionality")
+.MapToApiVersion(1);
+
 // Health check endpoint (public)
 app.MapGet("/health-status", () => new { Status = "Healthy", Timestamp = DateTime.UtcNow })
     .WithName("HealthStatus")
@@ -273,4 +296,4 @@ record WeatherForecastLegacy(DateOnly Date, int TemperatureC, string? Summary)
 [JsonSerializable(typeof(WeatherForecastLegacy[]))]
 internal partial class AppJsonSerializerContext : JsonSerializerContext
 {
-}
+} 
