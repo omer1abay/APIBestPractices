@@ -52,7 +52,6 @@ public sealed class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<
                     g => g.Select(x => x.ErrorMessage).ToArray()
                 );
 
-            // TResponse'un Result<> türü olup olmadýðýný kontrol et
             if (typeof(TResponse).IsGenericType &&
                 typeof(TResponse).GetGenericTypeDefinition() == typeof(Result<>))
             {

@@ -11,6 +11,8 @@ using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi.Models;
+using Serilog;
+using System.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using StatusCodes = Microsoft.AspNetCore.Http.StatusCodes;
@@ -18,6 +20,11 @@ using StatusCodes = Microsoft.AspNetCore.Http.StatusCodes;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+
+var connStringForMongoDb = builder.Configuration.GetSection("mongo");
+Debug.WriteLine($"Using MongoDB connection string: {connStringForMongoDb}");
+
+
 
 builder.Services.AddHttpContextAccessor();
 
@@ -150,6 +157,7 @@ ApiVersionSet apiVersionSet = app.NewApiVersionSet()
 var weatherGroup = app.MapGroup("/api/v{version:apiVersion}/weather")
     .WithApiVersionSet(apiVersionSet)
     .WithTags("Weather")
+    //.RequireAuthorization()
     .WithOpenApi();
 
 weatherGroup.MapGet("/forecasts", async (
@@ -182,7 +190,7 @@ weatherGroup.MapPost("/forecasts", async (
     CreateWeatherForecastDto request,
     CancellationToken cancellationToken) =>
 {
-    throw new ArgumentException("This endpoint is deprecated. Use /api/v2/weather/forecasts instead.", nameof(request));
+    //throw new ArgumentException("This endpoint is deprecated. Use /api/v2/weather/forecasts instead.", nameof(request));
 
     var command = new CreateWeatherForecastCommand(
         request.Date,
@@ -208,6 +216,16 @@ weatherGroup.MapPost("/forecasts", async (
 .ProducesValidationProblem()
 .ProducesProblem(StatusCodes.Status401Unauthorized)
 .RequireRateLimiting("ConcurrencyPolicy")
+.MapToApiVersion(1);
+
+weatherGroup.MapGet("/conn-string", (IConfiguration configuration) =>
+{
+    var data = configuration.GetConnectionString("log-db");
+    return Results.Ok(new { ConnectionString = data });
+})
+.WithName("Connection String")
+.WithSummary("Get connection string")
+.WithDescription("Get connection string")
 .MapToApiVersion(1);
 
 // Health check endpoint (public)

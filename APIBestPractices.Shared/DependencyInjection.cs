@@ -11,11 +11,11 @@ public static class DependencyInjection
     public static IServiceCollection AddSharedServices(this IServiceCollection services)
     {
         // Add Serilog
-        services.AddSerilog((services, lc) => lc
-            .ReadFrom.Configuration(services.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>())
-            .Enrich.FromLogContext()
-            .WriteTo.Console()
-            .WriteTo.File("logs/app-.txt", rollingInterval: RollingInterval.Day));
+        //services.AddSerilog((services, lc) => lc
+        //    .ReadFrom.Configuration(services.GetRequiredService<Microsoft.Extensions.Configuration.IConfiguration>())
+        //    .Enrich.FromLogContext()
+        //    .WriteTo.Console()
+        //    .WriteTo.File("logs/app-.txt", rollingInterval: RollingInterval.Day));
 
         return services;
     }

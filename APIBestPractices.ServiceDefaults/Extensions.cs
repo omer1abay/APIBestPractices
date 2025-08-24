@@ -1,10 +1,13 @@
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.ServiceDiscovery;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using MongoDB.Driver.Core.Configuration;
 using OpenTelemetry;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
@@ -36,16 +39,12 @@ public static class Extensions
             http.AddServiceDiscovery();
         });
 
-        builder.AddMongoDBClient("mongo");
-        var trial = builder.Configuration.GetConnectionString("mongo");
+        var trial = builder.Configuration.GetConnectionString("log-db");
+
 
         // Configure Serilog
         builder.Services.AddSerilog((services, lc) =>
         {
-
-            var connStringForMongoDb = services.GetRequiredService<IConfiguration>().GetConnectionString("mongo");
-            Debug.WriteLine($"Using MongoDB connection string: {connStringForMongoDb}");
-
             lc
             .ReadFrom.Configuration(builder.Configuration)
             .ReadFrom.Services(services)
@@ -61,7 +60,11 @@ public static class Extensions
                 rollingInterval: RollingInterval.Day,
                 retainedFileCountLimit: 7,
                 outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj} <s:{SourceContext}>{NewLine}{Exception}")
-            .WriteTo.MongoDB(connStringForMongoDb, collectionName:"logs");
+            .WriteTo.MongoDB(
+                databaseUrl: trial, // Aynı server
+                collectionName: "logs",
+                restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information
+            );
         }
         );
 
