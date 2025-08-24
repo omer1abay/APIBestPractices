@@ -19,7 +19,7 @@ public sealed class GetWeatherForecastsHandler : IQueryHandler<GetWeatherForecas
 
         if (!string.IsNullOrEmpty(request.Location))
         {
-            forecasts = await _repository.GetByLocationAsync(request.Location, cancellationToken);
+            forecasts = await _repository.GetByLocationAsync(request.Location, request.PageSize, request.PageNumber, cancellationToken);
         }
         else if (request.StartDate.HasValue && request.EndDate.HasValue)
         {

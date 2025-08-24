@@ -28,10 +28,12 @@ public class WeatherForecastRepository : IWeatherForecastRepository
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<WeatherForecast>> GetByLocationAsync(string location, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<WeatherForecast>> GetByLocationAsync(string location, int pageSize, int pageNumber, CancellationToken cancellationToken = default)
     {
         return await _context.WeatherForecasts
             .Where(wf => wf.Location.Contains(location))
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
             .OrderBy(wf => wf.Date)
             .ToListAsync(cancellationToken);
     }
